@@ -1,5 +1,4 @@
 import { apiClient } from './apiClient';
-import type { Post } from './postService';
 
 /**
  * Feed Service (Frontend)
@@ -12,7 +11,35 @@ export interface FeedCursor {
   discover?: string;
 }
 
-export interface FeedItem extends Post {}
+export interface FeedItem {
+  postId: string;
+  thumbUrl: string;
+  imageUrl?: string;
+  aspect: string;
+  styleTag?: string;
+  caption?: string;
+  user: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarThumbUrl: string;
+  };
+  tribe: {
+    id: string;
+    slug: string;
+    name: string;
+  };
+  counts: {
+    respects: number;
+    shares: number;
+  };
+  viewerState: {
+    hasRespected: boolean;
+  };
+  canTryStyle: boolean;
+  hasWatermark: boolean;
+  createdAt: Date | string;
+}
 
 export interface FeedResponse {
   items: FeedItem[];
