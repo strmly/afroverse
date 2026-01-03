@@ -67,6 +67,14 @@ export async function getMyProfile(): Promise<Profile> {
 }
 
 /**
+ * Get user profile by username
+ */
+export async function getUserProfile(username: string): Promise<Profile> {
+  const response = await apiClient.get(`/users/${username}`);
+  return response.data;
+}
+
+/**
  * Check if username is available
  */
 export async function checkUsername(username: string): Promise<UsernameCheckResponse> {
