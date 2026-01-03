@@ -377,7 +377,7 @@ export default function FeedPage() {
         }}
       >
         <FeedCanvas
-          imageUrl={currentPost.imageUrl}
+          imageUrl={currentPost.imageUrl || currentPost.thumbUrl}
           aspectRatio={currentPost.aspect as '9:16' | '1:1'}
           onDoubleTap={handleDoubleTap}
           onLongPress={handleLongPress}
