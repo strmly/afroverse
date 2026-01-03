@@ -14,8 +14,8 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
   
-  // Output standalone for better performance
-  output: 'standalone',
+  // Note: Vercel handles output automatically, don't use 'standalone' mode
+  // output: 'standalone', // Disabled for Vercel deployment
   
   // Enable gzip compression
   compress: true,
