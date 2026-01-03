@@ -34,6 +34,7 @@
     "seed-sa:images": "ts-node scripts/seed-sa-with-images.ts"
   },
   "dependencies": {
+    "@vercel/node": "^3.0.7",
     "@google-cloud/storage": "^7.7.0",
     "@google-cloud/tasks": "^4.0.0",
     "@google/generative-ai": "^0.24.1",
