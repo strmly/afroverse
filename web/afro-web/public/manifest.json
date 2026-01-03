@@ -1,0 +1,10 @@
+{
+  "name": "AfroMoji",
+  "short_name": "AfroMoji",
+  "description": "AI-powered transformations rooted in African identity, culture, and belonging",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000"
+}
+

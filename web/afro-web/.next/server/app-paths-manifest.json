@@ -1,0 +1,7 @@
+{
+  "/profile/page": "app/profile/page.js",
+  "/create/page": "app/create/page.js",
+  "/feed/page": "app/feed/page.js",
+  "/post/[id]/page": "app/post/[id]/page.js",
+  "/tribe/[slug]/page": "app/tribe/[slug]/page.js"
+}

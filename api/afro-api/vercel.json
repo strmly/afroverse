@@ -1,0 +1,109 @@
+{
+  "version": 2,
+  "name": "afromoji-api",
+  "builds": [
+    {
+      "src": "src/server.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/auth/(.*)",
+      "dest": "src/server.ts",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    },
+    {
+      "src": "/api/users/(.*)",
+      "dest": "src/server.ts",
+      "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+    },
+    {
+      "src": "/api/tribes/(.*)",
+      "dest": "src/server.ts",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    },
+    {
+      "src": "/api/posts/(.*)",
+      "dest": "src/server.ts",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    },
+    {
+      "src": "/api/feed/(.*)",
+      "dest": "src/server.ts",
+      "methods": ["GET", "OPTIONS"]
+    },
+    {
+      "src": "/api/generate/(.*)",
+      "dest": "src/server.ts",
+      "methods": ["POST", "GET", "OPTIONS"]
+    },
+    {
+      "src": "/api/media/(.*)",
+      "dest": "src/server.ts",
+      "methods": ["POST", "GET", "DELETE", "OPTIONS"]
+    },
+    {
+      "src": "/api/worker/(.*)",
+      "dest": "src/server.ts",
+      "methods": ["POST", "GET", "OPTIONS"]
+    },
+    {
+      "src": "/api/jobs/(.*)",
+      "dest": "src/server.ts",
+      "methods": ["POST", "GET", "OPTIONS"]
+    },
+    {
+      "src": "/api/cron/(.*)",
+      "dest": "src/server.ts",
+      "methods": ["GET", "POST", "OPTIONS"]
+    },
+    {
+      "src": "/api/admin/(.*)",
+      "dest": "src/server.ts",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    },
+    {
+      "src": "/health",
+      "dest": "src/server.ts",
+      "methods": ["GET"]
+    },
+    {
+      "src": "/(.*)",
+      "dest": "src/server.ts"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/generation-retry",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-generations",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-uploads",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/security-cleanup",
+      "schedule": "0 4 * * *"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "regions": ["iad1"],
+  "functions": {
+    "src/server.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  }
+}
+
+
+
+
+
