@@ -7,9 +7,11 @@ import { IdentitySignals } from '../../components/feed/IdentitySignals';
 import { ActionRail } from '../../components/feed/ActionRail';
 import { useFeed } from '../../hooks/useFeed';
 import { respectPost, unrespectPost, sharePost as sharePostAPI } from '../../services/postService';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function FeedPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const { items: posts, loading, initialLoading, loadMore, hasMore } = useFeed('personalized');
   
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -413,23 +415,26 @@ export default function FeedPage() {
       />
 
       {/* LAYER 3 — Action Rail */}
-      <ActionRail
-        creator={{
-          id: currentPost.user.id,
-          username: currentPost.user.username,
-          avatar: currentPost.user.avatarThumbUrl,
-          tribe: {
-            color: '#9333EA',
-            icon: '◆',
-          },
-        }}
-        respectCount={currentPost.counts.respects}
-        isRespected={currentPost.viewerState.hasRespected}
-        onRespect={handleRespect}
-        onShare={handleShare}
-        onTryStyle={handleTryStyle}
-        style={currentPost.styleTag || ''}
-      />
+      {currentPost.user.username && (
+        <ActionRail
+          creator={{
+            id: currentPost.user.id,
+            username: currentPost.user.username,
+            avatar: currentPost.user.avatarThumbUrl || '',
+            tribe: {
+              color: '#9333EA',
+              icon: '◆',
+            },
+          }}
+          respectCount={currentPost.counts.respects}
+          isRespected={currentPost.viewerState.hasRespected}
+          onRespect={handleRespect}
+          onShare={handleShare}
+          onTryStyle={handleTryStyle}
+          style={currentPost.styleTag || ''}
+          currentUserId={user?.id}
+        />
+      )}
 
       {/* Double-tap respect animation */}
       {respectAnimation && (

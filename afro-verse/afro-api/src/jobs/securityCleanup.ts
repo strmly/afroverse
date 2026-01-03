@@ -3,6 +3,7 @@ import { Generation } from '../models/Generation';
 import { securityConfig } from '../config/security';
 import { logger } from '../utils/logger';
 import { getBucket } from '../config/storage';
+import { isConnectionReady } from '../config/db';
 
 /**
  * Security Cleanup Jobs
@@ -26,6 +27,12 @@ export async function cleanupOrphanedSelfies(): Promise<{
   let errors = 0;
   
   try {
+    // Check MongoDB connection before proceeding
+    if (!isConnectionReady()) {
+      logger.warn('MongoDB not connected, skipping orphaned selfies cleanup');
+      return { cleaned, errors };
+    }
+    
     logger.info('Starting orphaned selfies cleanup');
     
     const cutoffTime = new Date(
@@ -90,6 +97,12 @@ export async function cleanupFailedGenerations(): Promise<{
   let errors = 0;
   
   try {
+    // Check MongoDB connection before proceeding
+    if (!isConnectionReady()) {
+      logger.warn('MongoDB not connected, skipping failed generations cleanup');
+      return { cleaned, errors };
+    }
+    
     logger.info('Starting failed generations cleanup');
     
     // Delete failed generations older than 7 days
@@ -124,6 +137,12 @@ export async function cleanupExpiredTokens(): Promise<{
   let errors = 0;
   
   try {
+    // Check MongoDB connection before proceeding
+    if (!isConnectionReady()) {
+      logger.warn('MongoDB not connected, skipping expired tokens cleanup');
+      return { cleaned, errors };
+    }
+    
     logger.info('Starting expired tokens cleanup');
     
     const { RefreshToken } = await import('../models/RefreshToken');
@@ -151,6 +170,12 @@ export async function cleanupExpiredTokens(): Promise<{
  */
 export async function detectSuspiciousActivity(): Promise<void> {
   try {
+    // Check MongoDB connection before proceeding
+    if (!isConnectionReady()) {
+      logger.warn('MongoDB not connected, skipping suspicious activity detection');
+      return;
+    }
+    
     logger.info('Starting suspicious activity detection');
     
     // Check for users with high block rate

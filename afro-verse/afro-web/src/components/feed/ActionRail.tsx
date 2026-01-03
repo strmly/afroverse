@@ -41,8 +41,10 @@ export const ActionRail: React.FC<ActionRailProps> = ({
   const handleProfileClick = () => {
     if (currentUserId && creator.id === currentUserId) {
       router.push('/profile');
-    } else {
+    } else if (creator.username) {
       router.push(`/profile/${creator.username}`);
+    } else {
+      console.warn('Cannot navigate to profile: username is undefined');
     }
   };
 
