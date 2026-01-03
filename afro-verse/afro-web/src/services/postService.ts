@@ -70,11 +70,21 @@ export async function sharePost(postId: string): Promise<void> {
 /**
  * Get posts for a user's profile
  */
-export async function getUserPosts(username: string, limit: number = 50): Promise<Post[]> {
-  const response = await apiClient.get(`/users/${username}/posts`, {
-    params: { limit },
-  });
-  return response.data.posts || [];
+export async function getUserPosts(
+  username: string,
+  limit: number,
+  cursor?: string
+): Promise<{ posts: Post[]; nextCursor?: string }> {
+  const params: any = { limit };
+  if (cursor) {
+    params.cursor = cursor;
+  }
+  
+  const response = await apiClient.get(`/users/${username}/posts`, { params });
+  return {
+    posts: response.data.posts || [],
+    nextCursor: response.data.nextCursor,
+  };
 }
 
 /**
