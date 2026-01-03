@@ -30,6 +30,26 @@ export interface GenerationOutput {
   requestId?: string;
 }
 
+interface GeminiErrorResponse {
+  error?: {
+    message?: string;
+    code?: number;
+  };
+}
+
+interface GeminiTextResponse {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{
+        text?: string;
+      }>;
+    };
+  }>;
+  error?: {
+    message?: string;
+  };
+}
+
 /**
  * Check if Gemini is configured
  */
@@ -61,10 +81,10 @@ export async function generateText(prompt: string, useProModel = false): Promise
       })
     });
 
-    const data = await response.json();
+    const data = await response.json() as GeminiTextResponse;
 
     if (!response.ok) {
-      throw new Error(data.error?.message || 'Text generation failed');
+      throw new Error((data as GeminiErrorResponse).error?.message || 'Text generation failed');
     }
 
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -111,10 +131,10 @@ export async function generateImage(input: GenerationInput): Promise<GenerationO
       })
     });
 
-    const data = await response.json();
+    const data = await response.json() as GeminiTextResponse | GeminiErrorResponse;
 
     if (!response.ok) {
-      throw new Error(data.error?.message || 'Generation failed');
+      throw new Error((data as GeminiErrorResponse).error?.message || 'Generation failed');
     }
 
     // For now, return a placeholder
