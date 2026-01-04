@@ -50,34 +50,41 @@ export function createApp(): Express {
     
     // Function to check if origin is allowed
     const originChecker = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) {
-        return callback(null, true);
-      }
-      
-      // Check against default origins
-      if (defaultOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      
-      // Check against Vercel pattern
-      if (/^https:\/\/.*\.vercel\.app$/.test(origin)) {
-        return callback(null, true);
-      }
-      
-      // Check against CORS_ORIGIN env var if set
-      if (corsOrigin) {
-        const allowedOrigins = corsOrigin.includes(',') 
-          ? corsOrigin.split(',').map(o => o.trim())
-          : [corsOrigin];
-        
-        if (allowedOrigins.includes(origin)) {
+      try {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) {
           return callback(null, true);
         }
+        
+        // Check against default origins
+        if (defaultOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        
+        // Check against Vercel pattern (allow all *.vercel.app domains)
+        if (/^https:\/\/.*\.vercel\.app$/.test(origin)) {
+          return callback(null, true);
+        }
+        
+        // Check against CORS_ORIGIN env var if set
+        if (corsOrigin) {
+          const allowedOrigins = corsOrigin.includes(',') 
+            ? corsOrigin.split(',').map(o => o.trim())
+            : [corsOrigin];
+          
+          if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+          }
+        }
+        
+        // Allow by default for now (can be restricted later)
+        logger.warn('CORS: Allowing unknown origin', { origin });
+        return callback(null, true);
+      } catch (error) {
+        // On error, allow the request (fail open)
+        logger.error('CORS origin check error', error);
+        return callback(null, true);
       }
-      
-      // Deny by default
-      callback(null, false);
     };
     
     return originChecker;
