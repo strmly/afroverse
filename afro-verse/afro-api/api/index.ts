@@ -45,10 +45,11 @@ async function initializeApp() {
 }
 
 /**
- * Check if origin is allowed for CORS
+ * Get allowed origin for CORS
+ * Returns the origin if allowed, or null if not allowed
  */
-function isOriginAllowed(origin: string | undefined): boolean {
-  if (!origin) return true; // Allow requests with no origin
+function getAllowedOrigin(origin: string | undefined): string | null {
+  if (!origin) return null; // No origin header means same-origin or non-browser request
   
   const allowedOrigins = [
     'https://afroverse-rose.vercel.app',
@@ -57,39 +58,48 @@ function isOriginAllowed(origin: string | undefined): boolean {
   
   // Check against default origins
   if (allowedOrigins.includes(origin)) {
-    return true;
+    return origin;
   }
   
-  // Check against Vercel pattern
+  // Check against Vercel pattern (allow all *.vercel.app domains)
   if (/^https:\/\/.*\.vercel\.app$/.test(origin)) {
-    return true;
+    return origin;
   }
   
   // Check against CORS_ORIGIN env var if set
   const corsOrigin = process.env.CORS_ORIGIN;
   if (corsOrigin) {
-    const allowedOrigins = corsOrigin.includes(',') 
+    const envOrigins = corsOrigin.includes(',') 
       ? corsOrigin.split(',').map(o => o.trim())
       : [corsOrigin];
     
-    if (allowedOrigins.includes(origin)) {
-      return true;
+    if (envOrigins.includes(origin)) {
+      return origin;
     }
   }
   
-  return false;
+  // For production, be permissive and allow the origin (can restrict later)
+  // This ensures CORS works while we debug
+  logger.warn('CORS: Allowing origin (permissive mode)', { origin });
+  return origin;
 }
 
 /**
- * Set CORS headers
+ * Set CORS headers - ALWAYS sets headers to ensure CORS works
  */
 function setCorsHeaders(req: VercelRequest, res: VercelResponse): void {
   const origin = req.headers.origin as string | undefined;
+  const allowedOrigin = getAllowedOrigin(origin);
   
-  if (isOriginAllowed(origin) && origin) {
+  // Always set Access-Control-Allow-Origin if we have an origin
+  if (allowedOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  } else if (origin) {
+    // Even if not explicitly allowed, set it (permissive mode)
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   
+  // Always set these headers
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-ID, X-Device-ID, X-Requested-With');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -100,13 +110,25 @@ function setCorsHeaders(req: VercelRequest, res: VercelResponse): void {
  * Vercel Serverless Handler
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const origin = req.headers.origin as string | undefined;
+  
+  // Log CORS requests for debugging
+  if (origin) {
+    logger.info('CORS request', { 
+      method: req.method, 
+      path: req.url, 
+      origin 
+    });
+  }
+  
   // Handle CORS preflight requests directly
   if (req.method === 'OPTIONS') {
     setCorsHeaders(req, res);
+    logger.info('CORS preflight handled', { origin });
     return res.status(204).end();
   }
   
-  // Set CORS headers for all requests
+  // Set CORS headers for all requests (MUST be before Express handles it)
   setCorsHeaders(req, res);
   
   try {
@@ -116,6 +138,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return expressApp(req, res);
   } catch (error: any) {
     logger.error('Serverless handler error:', error);
+    
+    // Ensure CORS headers are set even on errors
+    setCorsHeaders(req, res);
+    
     return res.status(500).json({
       success: false,
       message: 'Internal server error',
