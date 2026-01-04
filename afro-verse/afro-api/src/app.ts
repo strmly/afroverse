@@ -33,21 +33,7 @@ import { sanitizeInput } from './middleware/validation.middleware';
 export function createApp(): Express {
   const app = express();
   
-  // Security middleware (configured to not interfere with CORS)
-  app.use(helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-    crossOriginEmbedderPolicy: false,
-  }));
-  
-  // Security headers
-  app.use((_req, res, next) => {
-    Object.entries(securityConfig.headers).forEach(([key, value]) => {
-      res.setHeader(key, value);
-    });
-    next();
-  });
-  
-  // CORS
+  // CORS - MUST be first to handle preflight OPTIONS requests
   // Support multiple origins (comma-separated) or single origin
   const getCorsOrigin = (): string | string[] | boolean | ((origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => void) => {
     if (env.NODE_ENV === 'development') {
@@ -101,10 +87,50 @@ export function createApp(): Express {
     origin: getCorsOrigin(),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Device-ID'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Device-ID', 'X-Requested-With'],
+    exposedHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
     preflightContinue: false,
     optionsSuccessStatus: 204,
   }));
+  
+  // Explicit OPTIONS handler as fallback (in case CORS middleware doesn't catch it)
+  app.options('*', (req: Request, res: Response) => {
+    const origin = req.headers.origin;
+    const allowedOrigins = [
+      'https://afroverse-rose.vercel.app',
+      'https://afroverse-ceca.vercel.app',
+    ];
+    
+    // Check if origin is allowed
+    const isAllowed = !origin || 
+      allowedOrigins.includes(origin) || 
+      /^https:\/\/.*\.vercel\.app$/.test(origin) ||
+      (process.env.CORS_ORIGIN && process.env.CORS_ORIGIN.split(',').map(o => o.trim()).includes(origin));
+    
+    if (isAllowed && origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-ID, X-Device-ID, X-Requested-With');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+    res.status(204).end();
+  });
+  
+  // Security middleware (configured to not interfere with CORS)
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginEmbedderPolicy: false,
+    contentSecurityPolicy: false, // Disable CSP to avoid conflicts
+  }));
+  
+  // Security headers
+  app.use((_req, res, next) => {
+    Object.entries(securityConfig.headers).forEach(([key, value]) => {
+      res.setHeader(key, value);
+    });
+    next();
+  });
   
   // Request ID for tracing
   app.use((req: Request, res: Response, next: NextFunction) => {
