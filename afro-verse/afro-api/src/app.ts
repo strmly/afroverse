@@ -165,6 +165,27 @@ export function createApp(): Express {
     next();
   });
   
+  // Root endpoint
+  app.get('/', (_req: Request, res: Response) => {
+    res.json({
+      name: 'AfroMoji API',
+      version: '1.0.0',
+      status: 'online',
+      timestamp: new Date().toISOString(),
+      environment: env.NODE_ENV,
+      endpoints: {
+        health: '/health',
+        auth: '/api/auth',
+        users: '/api/users',
+        tribes: '/api/tribes',
+        posts: '/api/posts',
+        feed: '/api/feed',
+        generate: '/api/generate',
+        media: '/api/media',
+      },
+    });
+  });
+  
   // Health check
   app.get('/health', (_req: Request, res: Response) => {
     res.json({
