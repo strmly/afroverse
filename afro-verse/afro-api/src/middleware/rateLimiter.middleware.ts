@@ -39,6 +39,8 @@ function getRedisClient(): Redis | null {
 
 /**
  * Check rate limit using sliding window algorithm
+ * 
+ * NOTE: Rate limiting is currently disabled - always returns allowed: true
  */
 async function checkRateLimit(
   key: string,
@@ -48,6 +50,14 @@ async function checkRateLimit(
   remaining: number;
   resetAt: number;
 }> {
+  // Rate limiting disabled - always allow
+  return {
+    allowed: true,
+    remaining: config.limit,
+    resetAt: Date.now() + config.window * 1000,
+  };
+  
+  /* Original rate limiting code (disabled)
   const redis = getRedisClient();
   
   // If Redis not available, allow (fail open)
@@ -105,6 +115,7 @@ async function checkRateLimit(
       resetAt: now + config.window * 1000,
     };
   }
+  */
 }
 
 /**
@@ -196,6 +207,10 @@ export const generationLimiter = {
   ),
   
   daily: async (userId: string): Promise<boolean> => {
+    // Rate limiting disabled - always allow
+    return true;
+    
+    /* Original rate limiting code (disabled)
     const redis = getRedisClient();
     if (!redis) return true; // Fail open
     
@@ -211,6 +226,7 @@ export const generationLimiter = {
       logger.error('Daily generation limit check error', error);
       return true; // Fail open
     }
+    */
   },
 };
 
@@ -247,11 +263,17 @@ export const uploadLimiter = {
 
 /**
  * Check respect toggle spam
+ * 
+ * NOTE: Rate limiting is currently disabled - always returns true
  */
 export async function checkRespectToggle(
   postId: string,
   userId: string
 ): Promise<boolean> {
+  // Rate limiting disabled - always allow
+  return true;
+  
+  /* Original rate limiting code (disabled)
   const redis = getRedisClient();
   if (!redis) return true; // Fail open
   
@@ -275,6 +297,7 @@ export async function checkRespectToggle(
     logger.error('Respect toggle check error', error);
     return true; // Fail open
   }
+  */
 }
 
 /**
