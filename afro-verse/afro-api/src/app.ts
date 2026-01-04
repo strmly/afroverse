@@ -33,8 +33,11 @@ import { sanitizeInput } from './middleware/validation.middleware';
 export function createApp(): Express {
   const app = express();
   
-  // Security middleware
-  app.use(helmet());
+  // Security middleware (configured to not interfere with CORS)
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginEmbedderPolicy: false,
+  }));
   
   // Security headers
   app.use((_req, res, next) => {
@@ -45,9 +48,62 @@ export function createApp(): Express {
   });
   
   // CORS
+  // Support multiple origins (comma-separated) or single origin
+  const getCorsOrigin = (): string | string[] | boolean | ((origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => void) => {
+    if (env.NODE_ENV === 'development') {
+      return '*'; // Allow all in development
+    }
+    
+    const corsOrigin = process.env.CORS_ORIGIN;
+    
+    // Default allowed origins (Vercel patterns)
+    const defaultOrigins = [
+      'https://afroverse-rose.vercel.app',
+      'https://afroverse-ceca.vercel.app',
+    ];
+    
+    // Function to check if origin is allowed
+    const originChecker = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) {
+        return callback(null, true);
+      }
+      
+      // Check against default origins
+      if (defaultOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      
+      // Check against Vercel pattern
+      if (/^https:\/\/.*\.vercel\.app$/.test(origin)) {
+        return callback(null, true);
+      }
+      
+      // Check against CORS_ORIGIN env var if set
+      if (corsOrigin) {
+        const allowedOrigins = corsOrigin.includes(',') 
+          ? corsOrigin.split(',').map(o => o.trim())
+          : [corsOrigin];
+        
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+      }
+      
+      // Deny by default
+      callback(null, false);
+    };
+    
+    return originChecker;
+  };
+  
   app.use(cors({
-    origin: process.env.CORS_ORIGIN || (env.NODE_ENV === 'development' ? '*' : false),
+    origin: getCorsOrigin(),
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Device-ID'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   }));
   
   // Request ID for tracing
