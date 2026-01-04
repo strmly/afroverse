@@ -10,7 +10,16 @@ import { getAccessToken, getRefreshToken, setTokens, clearTokens, getRememberMe 
  * - Error handling
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// Normalize API base URL to always end with /api
+const getApiBaseUrl = (): string => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  // Remove trailing slash if present
+  const baseUrl = envUrl.replace(/\/+$/, '');
+  // Ensure /api suffix
+  return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
