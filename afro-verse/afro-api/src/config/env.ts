@@ -73,9 +73,9 @@ function validateEnv(): EnvConfig {
     throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
   }
   
-  // Validate CRON_SECRET in production
+  // Validate CRON_SECRET in production (optional - will use generated secret if not provided)
   if (nodeEnv === 'production' && !process.env.CRON_SECRET) {
-    throw new Error('CRON_SECRET is required in production');
+    console.warn('CRON_SECRET not set - cron endpoints will use auto-generated secret');
   }
   
   return {
@@ -122,7 +122,7 @@ function validateEnv(): EnvConfig {
     
     // Async Jobs (Vercel)
     API_URL: process.env.API_URL,
-    CRON_SECRET: process.env.CRON_SECRET || 'dev-secret',
+    CRON_SECRET: process.env.CRON_SECRET || `auto-${Date.now()}-${Math.random().toString(36)}`,
     
     // Rate Limiting
     RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 min
