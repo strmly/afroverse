@@ -36,19 +36,26 @@ export const logger = winston.createLogger({
   ],
 });
 
-// In production, add file transports
-if (process.env.NODE_ENV === 'production') {
-  logger.add(
-    new winston.transports.File({
-      filename: 'logs/error.log',
-      level: 'error',
-    })
-  );
-  logger.add(
-    new winston.transports.File({
-      filename: 'logs/combined.log',
-    })
-  );
+// In production, add file transports (but not in serverless environments like Vercel)
+// Vercel sets VERCEL=1, and serverless environments have read-only filesystems
+const isServerless = process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME;
+if (process.env.NODE_ENV === 'production' && !isServerless) {
+  try {
+    logger.add(
+      new winston.transports.File({
+        filename: 'logs/error.log',
+        level: 'error',
+      })
+    );
+    logger.add(
+      new winston.transports.File({
+        filename: 'logs/combined.log',
+      })
+    );
+  } catch (error) {
+    // If file transports fail (e.g., read-only filesystem), just use console
+    console.warn('File logging disabled - using console only');
+  }
 }
 
 export default logger;
