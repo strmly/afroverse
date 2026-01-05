@@ -16,6 +16,7 @@ import { scheduleSecurityJobs } from './jobs/securityCleanup';
 
 async function startServer() {
   try {
+
     // Connect to MongoDB
     logger.info('Connecting to MongoDB...');
     try {
@@ -32,6 +33,7 @@ async function startServer() {
     // Create Express app
     const app = createApp();
 
+    
     // Schedule security jobs
     logger.info('Scheduling security jobs...');
     scheduleSecurityJobs();
