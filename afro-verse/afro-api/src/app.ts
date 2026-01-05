@@ -8,6 +8,8 @@ import { errorHandler } from './middleware/error.middleware';
 import { createRateLimiter } from './middleware/rateLimiter.middleware';
 import { securityConfig } from './config/security';
 
+
+
 // Import routes
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
@@ -34,8 +36,7 @@ import { sanitizeInput } from './middleware/validation.middleware';
 const ALLOWED_ORIGINS = [
   'https://afroverse-rose.vercel.app',
   'https://afroverse-ceca.vercel.app',
-  'http://localhost:3000',
-  'http://localhost:3001',
+  
 ];
 
 function isOriginAllowed(origin: string | undefined): boolean {
