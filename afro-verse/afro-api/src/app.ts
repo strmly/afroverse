@@ -30,105 +30,69 @@ import { sanitizeInput } from './middleware/validation.middleware';
  * Express Application Setup
  */
 
+// Allowed origins list
+const ALLOWED_ORIGINS = [
+  'https://afroverse-rose.vercel.app',
+  'https://afroverse-ceca.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:3001',
+];
+
+function isOriginAllowed(origin: string | undefined): boolean {
+  if (!origin) return true; // Allow requests with no origin (mobile apps, curl)
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  if (/^https:\/\/.*\.vercel\.app$/.test(origin)) return true;
+  if (env.NODE_ENV === 'development') return true;
+  
+  // Check CORS_ORIGIN env var
+  const corsOrigin = process.env.CORS_ORIGIN;
+  if (corsOrigin) {
+    const allowedOrigins = corsOrigin.split(',').map(o => o.trim());
+    if (allowedOrigins.includes(origin)) return true;
+  }
+  
+  return false;
+}
+
 export function createApp(): Express {
   const app = express();
   
-  // CORS - MUST be first to handle preflight OPTIONS requests
-  // Support multiple origins (comma-separated) or single origin
-  const getCorsOrigin = (): string | string[] | boolean | ((origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => void) => {
-    if (env.NODE_ENV === 'development') {
-      return '*'; // Allow all in development
-    }
-    
-    const corsOrigin = process.env.CORS_ORIGIN;
-    
-    // Default allowed origins (Vercel patterns)
-    const defaultOrigins = [
-      'https://afroverse-rose.vercel.app',
-      'https://afroverse-ceca.vercel.app',
-    ];
-    
-    // Function to check if origin is allowed
-    const originChecker = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      try {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) {
-          return callback(null, true);
-        }
-        
-        // Check against default origins
-        if (defaultOrigins.includes(origin)) {
-          return callback(null, true);
-        }
-        
-        // Check against Vercel pattern (allow all *.vercel.app domains)
-        if (/^https:\/\/.*\.vercel\.app$/.test(origin)) {
-          return callback(null, true);
-        }
-        
-        // Check against CORS_ORIGIN env var if set
-        if (corsOrigin) {
-          const allowedOrigins = corsOrigin.includes(',') 
-            ? corsOrigin.split(',').map(o => o.trim())
-            : [corsOrigin];
-          
-          if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
-          }
-        }
-        
-        // Allow by default for now (can be restricted later)
-        logger.warn('CORS: Allowing unknown origin', { origin });
-        return callback(null, true);
-      } catch (error) {
-        // On error, allow the request (fail open)
-        logger.error('CORS origin check error', error);
-        return callback(null, true);
-      }
-    };
-    
-    return originChecker;
-  };
+  // Trust proxy (important for Vercel)
+  app.set('trust proxy', 1);
   
-  app.use(cors({
-    origin: getCorsOrigin(),
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Device-ID', 'X-Requested-With'],
-    exposedHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
-  }));
-  
-  // Explicit OPTIONS handler as fallback (in case CORS middleware doesn't catch it)
-  app.options('*', (req: Request, res: Response) => {
-    const origin = req.headers.origin;
-    const allowedOrigins = [
-      'https://afroverse-rose.vercel.app',
-      'https://afroverse-ceca.vercel.app',
-    ];
+  // CRITICAL: Handle CORS manually BEFORE any other middleware
+  // This ensures preflight requests are handled correctly on Vercel
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const origin = req.headers.origin as string | undefined;
     
-    // Check if origin is allowed
-    const isAllowed = !origin || 
-      allowedOrigins.includes(origin) || 
-      /^https:\/\/.*\.vercel\.app$/.test(origin) ||
-      (process.env.CORS_ORIGIN && process.env.CORS_ORIGIN.split(',').map(o => o.trim()).includes(origin));
-    
-    if (isAllowed && origin) {
+    // Set CORS headers for all requests
+    if (origin && isOriginAllowed(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
+    } else if (!origin) {
+      // For requests without origin, allow from primary frontend
+      res.setHeader('Access-Control-Allow-Origin', 'https://afroverse-rose.vercel.app');
     }
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-ID, X-Device-ID, X-Requested-With');
+    
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
-    res.status(204).end();
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-ID, X-Device-ID, X-Requested-With, Accept, Origin');
+    res.setHeader('Access-Control-Expose-Headers', 'X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset');
+    res.setHeader('Access-Control-Max-Age', '86400');
+    
+    // Handle preflight OPTIONS request immediately
+    if (req.method === 'OPTIONS') {
+      res.status(204).end();
+      return;
+    }
+    
+    next();
   });
   
   // Security middleware (configured to not interfere with CORS)
   app.use(helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     crossOriginEmbedderPolicy: false,
-    contentSecurityPolicy: false, // Disable CSP to avoid conflicts
+    contentSecurityPolicy: false,
   }));
   
   // Security headers
@@ -154,10 +118,9 @@ export function createApp(): Express {
   app.use(sanitizeInput);
   
   // Global rate limiting (basic IP-based)
-  // In development, use a much higher limit for testing
   const rateLimit = env.NODE_ENV === 'development' ? 1000 : 100;
   const globalRateLimiter = createRateLimiter(
-    { limit: rateLimit, window: 900 }, // 1000 requests per 15 minutes in dev, 100 in prod
+    { limit: rateLimit, window: 900 },
     (req) => `rl:global:ip:${req.ip || 'unknown'}`
   );
   app.use(globalRateLimiter);
@@ -240,4 +203,3 @@ export function createApp(): Express {
 }
 
 export default createApp();
-
