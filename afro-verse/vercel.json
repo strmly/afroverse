@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "afro-api/api/index.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/jobs/(.*)",
+      "dest": "afro-api/api/index.ts"
+    },
+    {
+      "src": "/api/cron/(.*)",
+      "dest": "afro-api/api/index.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "afro-api/api/index.ts"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/generation-retry",
+      "schedule": "* * * * *"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
+
+
+
+
+
+
+

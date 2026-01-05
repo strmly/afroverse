@@ -11,7 +11,7 @@
 !.env.production.example
 
 # GCP Service Account Keys (NEVER COMMIT)
-*.json
+
 gcp-*.json
 *-key.json
 *-service-account.json
