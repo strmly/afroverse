@@ -1,22 +1,19 @@
 {
   "version": 2,
-  "ignore": [
-    "src/**",
-    "dist/**",
-    "scripts/**",
-    "tests/**"
-  ],
-  "routes": [
+  "headers": [
     {
-      "src": "/(.*)",
-      "dest": "/api/index.ts"
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "https://afroverse-rose.vercel.app" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, PATCH, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization, X-Request-ID, X-Device-ID, X-Requested-With, Accept, Origin" },
+        { "key": "Access-Control-Allow-Credentials", "value": "true" },
+        { "key": "Access-Control-Max-Age", "value": "86400" }
+      ]
     }
   ],
-  "regions": ["iad1"],
-  "functions": {
-    "api/index.ts": {
-      "maxDuration": 60,
-      "memory": 1024
-    }
-  }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api/index" }
+  ],
+  "regions": ["iad1"]
 }

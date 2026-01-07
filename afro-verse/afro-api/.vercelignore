@@ -1,8 +1,11 @@
+src/server.ts
+src/index.ts
 node_modules
+dist
+.git
 .env
 .env.*
 !.env.production.example
-dist
 .DS_Store
 *.log
 coverage
@@ -12,10 +15,3 @@ test-api.js
 tests/
 scripts/check-env.js
 nodemon.json
-src/server.ts
-src/index.ts
-
-
-
-
-
