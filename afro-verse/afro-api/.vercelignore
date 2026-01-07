@@ -12,6 +12,8 @@ test-api.js
 tests/
 scripts/check-env.js
 nodemon.json
+src/server.ts
+src/index.ts
 
 
 
