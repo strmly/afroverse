@@ -29,8 +29,7 @@ import { sanitizeInput } from './middleware/validation.middleware';
 const ALLOWED_ORIGINS = [
   'https://afroverse-rose.vercel.app',
   'https://afroverse-ceca.vercel.app',
-  'http://localhost:3000',
-  'http://localhost:3001',
+  
 ];
 
 function isOriginAllowed(origin: string | undefined): boolean {
