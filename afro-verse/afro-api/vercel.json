@@ -1,5 +1,11 @@
 {
   "version": 2,
+  "ignore": [
+    "src/**",
+    "dist/**",
+    "scripts/**",
+    "tests/**"
+  ],
   "routes": [
     {
       "src": "/(.*)",
