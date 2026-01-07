@@ -3,14 +3,12 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Load environment variables
 require('dotenv').config();
-
 // Import after env is set
 import { createApp } from '../src/app';
 import { connectDatabase } from '../src/config/db';
 import { logger } from '../src/utils/logger';
 
 const app = createApp();
-
 // Database connection promise (reused across invocations)
 let dbPromise: Promise<void> | null = null;
 
