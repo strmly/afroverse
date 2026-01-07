@@ -4,7 +4,6 @@
  * This file wraps the Express app for Vercel's serverless environment.
  */
 
-// Load environment variables
 require('dotenv').config();
 
 import { VercelRequest, VercelResponse } from '@vercel/node';
@@ -15,6 +14,9 @@ import { logger } from '../src/utils/logger';
 // Global app instance (cached across invocations)
 let app: any = null;
 let isDbConnected = false;
+
+
+
 
 /**
  * Initialize the application
