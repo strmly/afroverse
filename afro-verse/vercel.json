@@ -2,22 +2,22 @@
   "version": 2,
   "builds": [
     {
-      "src": "afro-api/api/index.ts",
+      "src": "afro-api/src/server.ts",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/jobs/(.*)",
-      "dest": "afro-api/api/index.ts"
+      "dest": "afro-api/src/server.ts"
     },
     {
       "src": "/api/cron/(.*)",
-      "dest": "afro-api/api/index.ts"
+      "dest": "afro-api/src/server.ts"
     },
     {
       "src": "/(.*)",
-      "dest": "afro-api/api/index.ts"
+      "dest": "afro-api/src/server.ts"
     }
   ],
   "crons": [
