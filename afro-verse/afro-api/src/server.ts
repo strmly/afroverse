@@ -9,14 +9,13 @@ import { connectDatabase } from './config/db';
 import { scheduleSecurityJobs } from './jobs/securityCleanup';
 
 /**
- * Server Entry Point
+ * Server Entry Point (Local Development)
  * 
- * Initializes database, starts Express server, and schedules background jobs.
+ * Note: On Vercel, api/index.ts is used instead.
  */
 
 async function startServer() {
   try {
-
     // Connect to MongoDB
     logger.info('Connecting to MongoDB...');
     try {
@@ -33,11 +32,12 @@ async function startServer() {
     // Create Express app
     const app = createApp();
 
-    
-    // Schedule security jobs
-    logger.info('Scheduling security jobs...');
-    scheduleSecurityJobs();
-    logger.info('✅ Security jobs scheduled');
+    // Schedule security jobs (only in non-serverless environment)
+    if (!process.env.VERCEL) {
+      logger.info('Scheduling security jobs...');
+      scheduleSecurityJobs();
+      logger.info('✅ Security jobs scheduled');
+    }
 
     // Start server
     const port = env.PORT || 3001;
@@ -52,11 +52,9 @@ async function startServer() {
     process.on('SIGTERM', async () => {
       logger.info('SIGTERM received, shutting down gracefully...');
       
-      // Close MongoDB connection
       await mongoose.connection.close();
       logger.info('MongoDB connection closed');
       
-      // Close Redis connection if exists
       try {
         const { closeRedis } = await import('./middleware/rateLimiter.middleware');
         await closeRedis();
@@ -92,6 +90,7 @@ async function startServer() {
   }
 }
 
-// Start server
-startServer();
-
+// Only start server if not on Vercel
+if (!process.env.VERCEL) {
+  startServer();
+}

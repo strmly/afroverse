@@ -7,140 +7,30 @@
       "use": "@vercel/node"
     }
   ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Credentials", "value": "true" },
-        { "key": "Access-Control-Allow-Origin", "value": "https://afroverse-rose.vercel.app" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,PUT,DELETE,PATCH,OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization, X-Request-ID, X-Device-ID, X-Requested-With, Accept, Origin" }
-      ]
-    }
-  ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "methods": ["OPTIONS"],
-      "dest": "api/index.ts",
-      "headers": {
-        "Access-Control-Allow-Credentials": "true",
-        "Access-Control-Allow-Origin": "https://afroverse-rose.vercel.app",
-        "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,PATCH,OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Request-ID, X-Device-ID, X-Requested-With, Accept, Origin",
-        "Access-Control-Max-Age": "86400"
-      }
-    },
-    {
-      "src": "/api/auth/(.*)",
-      "dest": "api/index.ts",
-      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      "headers": {
-        "Access-Control-Allow-Origin": "https://afroverse-rose.vercel.app",
-        "Access-Control-Allow-Credentials": "true"
-      }
-    },
-    {
-      "src": "/api/users/(.*)",
-      "dest": "api/index.ts",
-      "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-      "headers": {
-        "Access-Control-Allow-Origin": "https://afroverse-rose.vercel.app",
-        "Access-Control-Allow-Credentials": "true"
-      }
-    },
-    {
-      "src": "/api/tribes/(.*)",
-      "dest": "api/index.ts",
-      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      "headers": {
-        "Access-Control-Allow-Origin": "https://afroverse-rose.vercel.app",
-        "Access-Control-Allow-Credentials": "true"
-      }
-    },
-    {
-      "src": "/api/tribes",
-      "dest": "api/index.ts",
-      "methods": ["GET", "POST", "OPTIONS"],
-      "headers": {
-        "Access-Control-Allow-Origin": "https://afroverse-rose.vercel.app",
-        "Access-Control-Allow-Credentials": "true"
-      }
-    },
-    {
-      "src": "/api/posts/(.*)",
-      "dest": "api/index.ts",
-      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      "headers": {
-        "Access-Control-Allow-Origin": "https://afroverse-rose.vercel.app",
-        "Access-Control-Allow-Credentials": "true"
-      }
-    },
-    {
-      "src": "/api/feed/(.*)",
-      "dest": "api/index.ts",
-      "methods": ["GET", "OPTIONS"],
-      "headers": {
-        "Access-Control-Allow-Origin": "https://afroverse-rose.vercel.app",
-        "Access-Control-Allow-Credentials": "true"
-      }
-    },
-    {
-      "src": "/api/generate/(.*)",
-      "dest": "api/index.ts",
-      "methods": ["POST", "GET", "OPTIONS"],
-      "headers": {
-        "Access-Control-Allow-Origin": "https://afroverse-rose.vercel.app",
-        "Access-Control-Allow-Credentials": "true"
-      }
-    },
-    {
-      "src": "/api/media/(.*)",
-      "dest": "api/index.ts",
-      "methods": ["POST", "GET", "DELETE", "OPTIONS"],
-      "headers": {
-        "Access-Control-Allow-Origin": "https://afroverse-rose.vercel.app",
-        "Access-Control-Allow-Credentials": "true"
-      }
-    },
-    {
-      "src": "/api/follow/(.*)",
-      "dest": "api/index.ts",
-      "methods": ["GET", "POST", "DELETE", "OPTIONS"],
-      "headers": {
-        "Access-Control-Allow-Origin": "https://afroverse-rose.vercel.app",
-        "Access-Control-Allow-Credentials": "true"
-      }
-    },
-    {
-      "src": "/api/worker/(.*)",
-      "dest": "api/index.ts",
-      "methods": ["POST", "GET", "OPTIONS"]
-    },
-    {
-      "src": "/api/jobs/(.*)",
-      "dest": "api/index.ts",
-      "methods": ["POST", "GET", "OPTIONS"]
-    },
-    {
-      "src": "/api/cron/(.*)",
-      "dest": "api/index.ts",
-      "methods": ["GET", "POST", "OPTIONS"]
-    },
-    {
-      "src": "/api/admin/(.*)",
-      "dest": "api/index.ts",
-      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+      "dest": "api/index.ts"
     },
     {
       "src": "/health",
-      "dest": "api/index.ts",
-      "methods": ["GET"]
+      "dest": "api/index.ts"
+    },
+    {
+      "src": "/admin/(.*)",
+      "dest": "api/index.ts"
+    },
+    {
+      "src": "/worker/(.*)",
+      "dest": "api/index.ts"
+    },
+    {
+      "src": "/v1/(.*)",
+      "dest": "api/index.ts"
     },
     {
       "src": "/",
-      "dest": "api/index.ts",
-      "methods": ["GET", "OPTIONS"]
+      "dest": "api/index.ts"
     },
     {
       "src": "/(.*)",
@@ -165,9 +55,6 @@
       "schedule": "0 4 * * *"
     }
   ],
-  "env": {
-    "NODE_ENV": "production"
-  },
   "regions": ["iad1"],
   "functions": {
     "api/index.ts": {
@@ -175,5 +62,4 @@
       "memory": 1024
     }
   }
-
 }

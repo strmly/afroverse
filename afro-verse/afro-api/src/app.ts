@@ -1,5 +1,4 @@
 import express, { Express, Request, Response, NextFunction } from 'express';
-import cors from 'cors';
 import helmet from 'helmet';
 import { v4 as uuid } from 'uuid';
 import { env } from './config/env';
@@ -7,8 +6,6 @@ import { logger } from './utils/logger';
 import { errorHandler } from './middleware/error.middleware';
 import { createRateLimiter } from './middleware/rateLimiter.middleware';
 import { securityConfig } from './config/security';
-
-
 
 // Import routes
 import authRoutes from './routes/auth.routes';
@@ -28,24 +25,20 @@ import followRoutes from './routes/follow.routes';
 // Import security middleware
 import { sanitizeInput } from './middleware/validation.middleware';
 
-/**
- * Express Application Setup
- */
-
 // Allowed origins list
 const ALLOWED_ORIGINS = [
   'https://afroverse-rose.vercel.app',
   'https://afroverse-ceca.vercel.app',
-  
+  'http://localhost:3000',
+  'http://localhost:3001',
 ];
 
 function isOriginAllowed(origin: string | undefined): boolean {
-  if (!origin) return true; // Allow requests with no origin (mobile apps, curl)
+  if (!origin) return true;
   if (ALLOWED_ORIGINS.includes(origin)) return true;
   if (/^https:\/\/.*\.vercel\.app$/.test(origin)) return true;
   if (env.NODE_ENV === 'development') return true;
   
-  // Check CORS_ORIGIN env var
   const corsOrigin = process.env.CORS_ORIGIN;
   if (corsOrigin) {
     const allowedOrigins = corsOrigin.split(',').map(o => o.trim());
@@ -61,19 +54,17 @@ export function createApp(): Express {
   // Trust proxy (important for Vercel)
   app.set('trust proxy', 1);
   
-  // CRITICAL: Handle CORS manually BEFORE any other middleware
-  // This ensures preflight requests are handled correctly on Vercel
+  // CORS middleware - MUST be first
   app.use((req: Request, res: Response, next: NextFunction) => {
     const origin = req.headers.origin as string | undefined;
     
-    // Set CORS headers for all requests
-    if (origin && isOriginAllowed(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-    } else if (!origin) {
-      // For requests without origin, allow from primary frontend
-      res.setHeader('Access-Control-Allow-Origin', 'https://afroverse-rose.vercel.app');
-    }
+    // Determine allowed origin
+    const allowedOrigin = (origin && isOriginAllowed(origin))
+      ? origin
+      : 'https://afroverse-rose.vercel.app';
     
+    // Set CORS headers for ALL requests
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-ID, X-Device-ID, X-Requested-With, Accept, Origin');
@@ -82,12 +73,16 @@ export function createApp(): Express {
     
     // Handle preflight OPTIONS request immediately
     if (req.method === 'OPTIONS') {
-      res.status(204).end();
+      res.status(200).end();
       return;
     }
     
     next();
   });
+  
+  // Body parsing - must be before routes
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   
   // Security middleware (configured to not interfere with CORS)
   app.use(helmet({
@@ -96,9 +91,16 @@ export function createApp(): Express {
     contentSecurityPolicy: false,
   }));
   
-  // Security headers
+  // Security headers (skip CORS-related ones as we handle them above)
   app.use((_req, res, next) => {
-    Object.entries(securityConfig.headers).forEach(([key, value]) => {
+    const headers: Record<string, string> = { ...securityConfig.headers };
+    // Remove any CORS headers from securityConfig to avoid conflicts
+    delete headers['Access-Control-Allow-Origin'];
+    delete headers['Access-Control-Allow-Methods'];
+    delete headers['Access-Control-Allow-Headers'];
+    delete headers['Access-Control-Allow-Credentials'];
+    
+    Object.entries(headers).forEach(([key, value]) => {
       res.setHeader(key, value);
     });
     next();
@@ -111,14 +113,10 @@ export function createApp(): Express {
     next();
   });
   
-  // Body parsing
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-  
   // Input sanitization
   app.use(sanitizeInput);
   
-  // Global rate limiting (basic IP-based)
+  // Global rate limiting
   const rateLimit = env.NODE_ENV === 'development' ? 1000 : 100;
   const globalRateLimiter = createRateLimiter(
     { limit: rateLimit, window: 900 },
@@ -132,6 +130,7 @@ export function createApp(): Express {
       requestId: req.id,
       ip: req.ip,
       userAgent: req.headers['user-agent'],
+      origin: req.headers.origin,
     });
     next();
   });
@@ -144,6 +143,7 @@ export function createApp(): Express {
       status: 'online',
       timestamp: new Date().toISOString(),
       environment: env.NODE_ENV,
+      cors: 'enabled',
       endpoints: {
         health: '/health',
         auth: '/api/auth',
@@ -163,6 +163,7 @@ export function createApp(): Express {
       status: 'healthy',
       timestamp: new Date().toISOString(),
       environment: env.NODE_ENV,
+      cors: 'enabled',
     });
   });
   
