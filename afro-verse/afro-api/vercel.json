@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "afromoji-api",
   "builds": [
     {
       "src": "api/index.ts",
@@ -9,50 +8,8 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "api/index.ts"
-    },
-    {
-      "src": "/health",
-      "dest": "api/index.ts"
-    },
-    {
-      "src": "/admin/(.*)",
-      "dest": "api/index.ts"
-    },
-    {
-      "src": "/worker/(.*)",
-      "dest": "api/index.ts"
-    },
-    {
-      "src": "/v1/(.*)",
-      "dest": "api/index.ts"
-    },
-    {
-      "src": "/",
-      "dest": "api/index.ts"
-    },
-    {
       "src": "/(.*)",
-      "dest": "api/index.ts"
-    }
-  ],
-  "crons": [
-    {
-      "path": "/api/cron/generation-retry",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/cleanup-generations",
-      "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/cron/cleanup-uploads",
-      "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/security-cleanup",
-      "schedule": "0 4 * * *"
+      "dest": "/api/index.ts"
     }
   ],
   "regions": ["iad1"],
