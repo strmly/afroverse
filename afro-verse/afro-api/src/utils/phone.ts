@@ -144,9 +144,18 @@ export function validatePhoneNumber(
     const isMobile = isMobileNumber(normalized);
     
     if (requireMobile && !isMobile) {
+      // Provide helpful error message based on country
+      let errorMessage = 'Only mobile numbers are supported';
+      
+      if (country === 'ZA') {
+        errorMessage = 'Only mobile numbers are supported. South African mobile numbers must start with +27 followed by 6, 7, or 8 (e.g., +27821234567)';
+      } else if (country) {
+        errorMessage = `Only mobile numbers are supported for ${country}`;
+      }
+      
       return {
         valid: false,
-        error: 'Only mobile numbers are supported',
+        error: errorMessage,
       };
     }
     
