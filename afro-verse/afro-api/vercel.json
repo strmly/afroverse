@@ -4,10 +4,10 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "https://afroverse-rose.vercel.app" },
+        { "key": "Access-Control-Allow-Credentials", "value": "true" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, PATCH, OPTIONS" },
         { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization, X-Request-ID, X-Device-ID, X-Requested-With, Accept, Origin" },
-        { "key": "Access-Control-Allow-Credentials", "value": "true" },
         { "key": "Access-Control-Max-Age", "value": "86400" }
       ]
     }
