@@ -22,23 +22,39 @@ export function normalizePhoneNumber(phone: string, defaultCountry: string = 'ZA
     
     // Handle South African numbers starting with 0 (local format)
     // 0 followed by 9 digits → replace 0 with +27
+    // Examples: 0780782399 → +27780782399, 0821234567 → +27821234567
     if (/^0\d{9}$/.test(cleaned)) {
-      return parsePhoneNumber('+27' + cleaned.substring(1), 'ZA')!.format('E.164');
+      const normalized = parsePhoneNumber('+27' + cleaned.substring(1), 'ZA');
+      if (!normalized || !normalized.isValid()) {
+        throw new Error('Invalid South African phone number format');
+      }
+      return normalized.format('E.164');
     }
     
-    // If it doesn't start with +, add country code
+    // Handle numbers that start with 27 (country code without +)
+    // 27 followed by 9 digits → add +
+    if (/^27\d{9}$/.test(cleaned)) {
+      const normalized = parsePhoneNumber('+' + cleaned, 'ZA');
+      if (!normalized || !normalized.isValid()) {
+        throw new Error('Invalid phone number format');
+      }
+      return normalized.format('E.164');
+    }
+    
+    // If it doesn't start with +, try adding country code
     const phoneWithPlus = cleaned.startsWith('+') ? cleaned : `+${cleaned}`;
     
     // Parse and format to E.164
     const phoneNumber = parsePhoneNumber(phoneWithPlus, defaultCountry as any);
     
-    if (!phoneNumber) {
-      throw new Error('Invalid phone number');
+    if (!phoneNumber || !phoneNumber.isValid()) {
+      throw new Error('Invalid phone number format');
     }
     
     return phoneNumber.format('E.164');
   } catch (error) {
-    throw new Error('Invalid phone number format');
+    const errorMessage = error instanceof Error ? error.message : 'Invalid phone number format';
+    throw new Error(errorMessage);
   }
 }
 
@@ -131,9 +147,19 @@ export function validatePhoneNumber(
     
     // Validate E.164
     if (!validateE164(normalized)) {
+      // Provide helpful error message
+      let errorMessage = 'Invalid phone number format. Please use international format.';
+      
+      // Check if it looks like a South African number
+      if (phone.startsWith('0') && phone.length === 10) {
+        errorMessage = 'Invalid phone number format. For South African numbers, use format: +27821234567 or 07821234567';
+      } else if (!phone.startsWith('+') && !phone.startsWith('0')) {
+        errorMessage = 'Phone number must start with + (international format) or 0 (local format). Example: +27821234567 or 07821234567';
+      }
+      
       return {
         valid: false,
-        error: 'Invalid phone number format',
+        error: errorMessage,
       };
     }
     
@@ -148,7 +174,7 @@ export function validatePhoneNumber(
       let errorMessage = 'Only mobile numbers are supported';
       
       if (country === 'ZA') {
-        errorMessage = 'Only mobile numbers are supported. South African mobile numbers must start with +27 followed by 6, 7, or 8 (e.g., +27821234567)';
+        errorMessage = 'Only mobile numbers are supported. South African mobile numbers must start with +27 followed by 6, 7, or 8 (e.g., +27821234567 or 07821234567)';
       } else if (country) {
         errorMessage = `Only mobile numbers are supported for ${country}`;
       }
@@ -166,9 +192,25 @@ export function validatePhoneNumber(
       isMobile,
     };
   } catch (error) {
+    // Provide helpful error messages
+    let errorMessage = 'Invalid phone number';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      
+      // Enhance error message for common cases
+      if (errorMessage.includes('Invalid phone number format')) {
+        if (phone.startsWith('0') && phone.length === 10) {
+          errorMessage = 'Invalid South African phone number. Use format: +27821234567 or 07821234567';
+        } else if (!phone.startsWith('+') && !phone.startsWith('0')) {
+          errorMessage = 'Phone number must start with + (international) or 0 (local). Example: +27821234567';
+        }
+      }
+    }
+    
     return {
       valid: false,
-      error: error instanceof Error ? error.message : 'Invalid phone number',
+      error: errorMessage,
     };
   }
 }

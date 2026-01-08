@@ -79,7 +79,46 @@ export async function sendWhatsAppOTP(phoneE164: string): Promise<OTPSendResult>
     logger.error('Failed to send OTP', {
       phone: phoneE164,
       error: error.message,
+      errorCode: error.code,
+      status: error.status,
+      moreInfo: error.moreInfo,
     });
+    
+    // Handle Twilio authentication errors
+    if (error.status === 401 || error.code === 20003 || error.message?.toLowerCase().includes('authenticate')) {
+      logger.error('Twilio authentication failed', {
+        phone: phoneE164,
+        errorCode: error.code,
+        message: 'Invalid Twilio credentials. Please check TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN.',
+      });
+      return {
+        success: false,
+        error: 'SMS service configuration error. Please contact support.',
+      };
+    }
+    
+    // Handle invalid phone number errors
+    if (error.code === 21211 || error.message?.toLowerCase().includes('invalid') && error.message?.toLowerCase().includes('phone')) {
+      logger.error('Invalid phone number format', {
+        phone: phoneE164,
+        error: error.message,
+      });
+      return {
+        success: false,
+        error: 'Invalid phone number format. Please use international format (e.g., +27821234567).',
+      };
+    }
+    
+    // Handle rate limiting
+    if (error.code === 20429 || error.status === 429) {
+      logger.warn('Twilio rate limit exceeded', {
+        phone: phoneE164,
+      });
+      return {
+        success: false,
+        error: 'Too many requests. Please try again in a few minutes.',
+      };
+    }
     
     // Check for WhatsApp channel disabled error
     if (error.message && error.message.includes('Delivery channel disabled: WHATSAPP')) {
@@ -107,13 +146,31 @@ export async function sendWhatsAppOTP(phoneE164: string): Promise<OTPSendResult>
         logger.error('SMS fallback also failed', {
           phone: phoneE164,
           error: smsError.message,
+          errorCode: smsError.code,
+          status: smsError.status,
         });
+        
+        // Handle authentication errors in SMS fallback
+        if (smsError.status === 401 || smsError.code === 20003 || smsError.message?.toLowerCase().includes('authenticate')) {
+          return {
+            success: false,
+            error: 'SMS service configuration error. Please contact support.',
+          };
+        }
         
         // Check for specific Twilio errors
         if (smsError.message && smsError.message.includes('blocked')) {
           return {
             success: false,
             error: 'This phone number has been temporarily blocked. Please try a different number or contact support.',
+          };
+        }
+        
+        // Invalid phone number
+        if (smsError.code === 21211) {
+          return {
+            success: false,
+            error: 'Invalid phone number format. Please use international format (e.g., +27821234567).',
           };
         }
         
@@ -124,9 +181,10 @@ export async function sendWhatsAppOTP(phoneE164: string): Promise<OTPSendResult>
       }
     }
     
+    // Generic error - don't expose internal Twilio errors to users
     return {
       success: false,
-      error: error.message || 'Failed to send OTP',
+      error: 'Failed to send verification code. Please check your phone number and try again.',
     };
   }
 }

@@ -80,19 +80,31 @@ export async function sendOTP(
     }
 
     // Validate and normalize phone number
+    logger.info('Validating phone number', {
+      phoneInput: phoneInput?.substring(0, Math.min(7, phoneInput.length)) + '***',
+      inputLength: phoneInput?.length,
+    });
+    
     const phoneValidation = validatePhoneNumber(phoneInput, true);
     
     if (!phoneValidation.valid) {
       logger.warn('Phone validation failed', {
-        phoneInput: phoneInput?.substring(0, 4) + '***',
+        phoneInput: phoneInput?.substring(0, Math.min(7, phoneInput.length)) + '***',
         error: phoneValidation.error,
+        inputLength: phoneInput?.length,
       });
       return {
         success: false,
-        error: phoneValidation.error || 'Invalid phone number format. Please use international format (e.g., +1234567890)',
+        error: phoneValidation.error || 'Invalid phone number format. Please use international format (e.g., +27821234567 or 07821234567)',
         errorCode: 'invalid_phone',
       };
     }
+    
+    logger.info('Phone number validated and normalized', {
+      original: phoneInput?.substring(0, Math.min(7, phoneInput.length)) + '***',
+      normalized: phoneValidation.normalized?.substring(0, 7) + '***',
+      country: phoneValidation.country,
+    });
     
     const phoneE164 = phoneValidation.normalized!;
     
