@@ -32,7 +32,16 @@ export interface OTPVerifyResult {
  */
 export async function sendWhatsAppOTP(phoneE164: string): Promise<OTPSendResult> {
   if (!client || !VERIFY_SERVICE_SID) {
-    logger.warn('Twilio not configured, simulating OTP send');
+    const missingVars = [];
+    if (!env.TWILIO_ACCOUNT_SID) missingVars.push('TWILIO_ACCOUNT_SID');
+    if (!env.TWILIO_AUTH_TOKEN) missingVars.push('TWILIO_AUTH_TOKEN');
+    if (!VERIFY_SERVICE_SID) missingVars.push('TWILIO_VERIFY_SERVICE_SID');
+    
+    logger.error('Twilio not configured', {
+      missingVars,
+      nodeEnv: env.NODE_ENV,
+      phoneE164,
+    });
     
     // Development mode: simulate success
     if (env.NODE_ENV === 'development') {
@@ -45,7 +54,7 @@ export async function sendWhatsAppOTP(phoneE164: string): Promise<OTPSendResult>
     
     return {
       success: false,
-      error: 'Twilio not configured',
+      error: `Twilio configuration incomplete. Missing: ${missingVars.join(', ')}`,
     };
   }
   

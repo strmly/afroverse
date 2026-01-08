@@ -20,40 +20,92 @@ import { logger } from '../utils/logger';
  */
 export async function handleSendOTP(req: Request, res: Response) {
   try {
+    logger.info('handleSendOTP called', {
+      requestId: req.id,
+      bodyKeys: Object.keys(req.body),
+      ip: req.ip,
+      origin: req.headers.origin,
+    });
+
     // Accept both phoneE164 and phoneNumber for compatibility
     const { phoneE164, phoneNumber } = req.body;
     const phone = phoneE164 || phoneNumber;
     
-    if (!phone) {
+    // Validate request body
+    if (!req.body || Object.keys(req.body).length === 0) {
+      logger.warn('Empty request body received', { requestId: req.id });
       return res.status(400).json({
         error: 'invalid_request',
-        message: 'Phone number is required',
+        message: 'Request body is required. Please send phone number in request body.',
+      });
+    }
+
+    if (!phone) {
+      logger.warn('Phone number missing from request', {
+        requestId: req.id,
+        bodyKeys: Object.keys(req.body),
+      });
+      return res.status(400).json({
+        error: 'invalid_request',
+        message: 'Phone number is required. Send as "phoneE164" or "phoneNumber" in request body.',
+      });
+    }
+
+    if (typeof phone !== 'string') {
+      logger.warn('Phone number not a string', {
+        requestId: req.id,
+        phoneType: typeof phone,
+      });
+      return res.status(400).json({
+        error: 'invalid_request',
+        message: 'Phone number must be a string',
       });
     }
     
     const ipAddress = req.ip || req.socket.remoteAddress;
     
+    logger.info('Calling sendOTP service', {
+      requestId: req.id,
+      phonePrefix: phone.substring(0, 4),
+      ipAddress,
+    });
+
     const result = await sendOTP(phone, ipAddress);
     
     if (!result.success) {
       const statusCode = result.errorCode === 'rate_limited' ? 429 : 400;
       
+      logger.warn('OTP send failed', {
+        requestId: req.id,
+        errorCode: result.errorCode,
+        message: result.error,
+      });
+
       return res.status(statusCode).json({
         error: result.errorCode,
         message: result.error,
       });
     }
     
+    logger.info('OTP sent successfully', {
+      requestId: req.id,
+      otpSessionId: result.otpSessionId,
+    });
+
     // Always return success (don't reveal if number exists)
     return res.status(200).json({
       otpSessionId: result.otpSessionId,
       message: 'OTP sent successfully',
     });
-  } catch (error) {
-    logger.error('Error in handleSendOTP', error);
+  } catch (error: any) {
+    logger.error('Unexpected error in handleSendOTP', {
+      requestId: req.id,
+      error: error.message,
+      stack: error.stack,
+    });
     return res.status(500).json({
       error: 'internal_error',
-      message: 'Failed to send OTP',
+      message: 'An unexpected error occurred. Please try again.',
     });
   }
 }

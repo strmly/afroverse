@@ -6,6 +6,7 @@ import { sendWhatsAppOTP, verifyWhatsAppOTP } from './twilio.service';
 import { generateAccessToken } from '../utils/jwt';
 import { normalizePhoneNumber, validatePhoneNumber } from '../utils/phone';
 import { logger } from '../utils/logger';
+import { isConnectionReady } from '../config/db';
 
 /**
  * Auth Service
@@ -50,13 +51,45 @@ export async function sendOTP(
   ipAddress?: string
 ): Promise<SendOTPResult> {
   try {
+    logger.info('sendOTP called', {
+      phoneInput: phoneInput?.substring(0, 4) + '***',
+      ipAddress,
+      hasPhoneInput: !!phoneInput,
+    });
+
+    // Check database connection
+    if (!isConnectionReady()) {
+      logger.error('Database not connected', {
+        phoneInput: phoneInput?.substring(0, 4) + '***',
+      });
+      return {
+        success: false,
+        error: 'Service temporarily unavailable. Please try again in a moment.',
+        errorCode: 'service_unavailable',
+      };
+    }
+
+    // Validate input
+    if (!phoneInput || typeof phoneInput !== 'string') {
+      logger.error('Invalid phone input', { phoneInput: typeof phoneInput });
+      return {
+        success: false,
+        error: 'Phone number is required and must be a string',
+        errorCode: 'invalid_request',
+      };
+    }
+
     // Validate and normalize phone number
     const phoneValidation = validatePhoneNumber(phoneInput, true);
     
     if (!phoneValidation.valid) {
+      logger.warn('Phone validation failed', {
+        phoneInput: phoneInput?.substring(0, 4) + '***',
+        error: phoneValidation.error,
+      });
       return {
         success: false,
-        error: phoneValidation.error || 'Invalid phone number',
+        error: phoneValidation.error || 'Invalid phone number format. Please use international format (e.g., +1234567890)',
         errorCode: 'invalid_phone',
       };
     }
@@ -70,7 +103,7 @@ export async function sendOTP(
       logger.warn(`Rate limit exceeded for ${phoneE164}`);
       return {
         success: false,
-        error: 'Too many attempts. Try again later.',
+        error: 'Too many OTP requests. Please wait 10 minutes before trying again.',
         errorCode: 'rate_limited',
       };
     }
@@ -88,12 +121,17 @@ export async function sendOTP(
     }
     
     // Send OTP via Twilio
+    logger.info(`Sending OTP to ${phoneE164}`);
     const otpResult = await sendWhatsAppOTP(phoneE164);
     
     if (!otpResult.success) {
+      logger.error('Twilio OTP send failed', {
+        phoneE164,
+        error: otpResult.error,
+      });
       return {
         success: false,
-        error: 'Failed to send OTP. Try again.',
+        error: otpResult.error || 'Failed to send verification code. Please try again or contact support.',
         errorCode: 'provider_error',
       };
     }
@@ -106,8 +144,9 @@ export async function sendOTP(
       otpResult.providerRef
     );
     
-    logger.info(`OTP sent to ${phoneE164}`, {
+    logger.info(`OTP sent successfully to ${phoneE164}`, {
       sessionId: otpSession._id,
+      providerRef: otpResult.providerRef,
     });
     
     return {
@@ -115,10 +154,14 @@ export async function sendOTP(
       otpSessionId: otpSession._id.toString(),
     };
   } catch (error: any) {
-    logger.error('Error sending OTP', error);
+    logger.error('Error sending OTP - unexpected exception', {
+      error: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
     return {
       success: false,
-      error: 'Failed to send OTP',
+      error: 'An unexpected error occurred while sending OTP. Please try again.',
       errorCode: 'internal_error',
     };
   }
