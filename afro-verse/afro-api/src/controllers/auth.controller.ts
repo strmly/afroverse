@@ -20,9 +20,11 @@ import { logger } from '../utils/logger';
  */
 export async function handleSendOTP(req: Request, res: Response) {
   try {
-    const { phoneE164 } = req.body;
+    // Accept both phoneE164 and phoneNumber for compatibility
+    const { phoneE164, phoneNumber } = req.body;
+    const phone = phoneE164 || phoneNumber;
     
-    if (!phoneE164) {
+    if (!phone) {
       return res.status(400).json({
         error: 'invalid_request',
         message: 'Phone number is required',
@@ -31,7 +33,7 @@ export async function handleSendOTP(req: Request, res: Response) {
     
     const ipAddress = req.ip || req.socket.remoteAddress;
     
-    const result = await sendOTP(phoneE164, ipAddress);
+    const result = await sendOTP(phone, ipAddress);
     
     if (!result.success) {
       const statusCode = result.errorCode === 'rate_limited' ? 429 : 400;
