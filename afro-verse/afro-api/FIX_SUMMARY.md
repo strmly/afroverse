@@ -214,3 +214,6 @@ In development mode, the code will:
 **Issue**: 400 Bad Request on `/api/auth/otp/send`
 **Status**: ✅ Fixed with enhanced error handling and logging
 
+
+
+
